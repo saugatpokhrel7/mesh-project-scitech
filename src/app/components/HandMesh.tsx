@@ -1,9 +1,8 @@
 // HandMesh.tsx
-
 "use client";
-import React, { useEffect, useRef, useState } from "react";
 import * as handpose from "@tensorflow-models/handpose";
 import "@tensorflow/tfjs-backend-webgl";
+import React, { useEffect, useRef, useState } from "react";
 
 const HandMesh: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -20,6 +19,11 @@ const HandMesh: React.FC = () => {
     Array(5).fill(0)
   );
   const [tallyResults, setTallyResults] = useState<string[]>([]);
+  const [showCanvas, setShowCanvas] = useState(true);
+
+  const clearResults = () => {
+    setTallyResults([]);
+  };
 
   useEffect(() => {
     const runHandpose = async () => {
@@ -155,14 +159,7 @@ const HandMesh: React.FC = () => {
 
             // Update tallyResults based on your intended logic
             if (tallyResult !== "No match") {
-              const lastResult = tallyResults[tallyResults.length - 1];
-
-              // Check if the new tally result is different from the last one
-              if (tallyResult !== lastResult) {
-                const updatedResults = [...tallyResults, tallyResult];
-                console.log("Updated Results:", updatedResults);
-                setTallyResults(updatedResults);
-              }
+              setTallyResults((prevResults) => [...prevResults, tallyResult]);
             }
           }
 
@@ -275,15 +272,49 @@ const HandMesh: React.FC = () => {
     pinky_x_coordinates,
     fingerConversionArray,
     tallyResults,
+    showCanvas,
   ]);
 
   return (
-    <div className="flex flex-col items-center">
-      <video ref={videoRef} width={640} height={480} autoPlay></video>
-      <canvas ref={canvasRef} width={640} height={480}></canvas>
+    <div className="flex flex-col items-center min-h-screen bg-black text-white py-8 relative">
+      <div className="relative">
+        <video
+          ref={videoRef}
+          width={640}
+          height={480}
+          autoPlay
+          className="rounded-md shadow-md"
+        ></video>
+        <button
+          onClick={clearResults}
+          className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-md"
+        >
+          Clear
+        </button>
+        {/* Checkbox to toggle canvas visibility */}
+        <label className="absolute top-2 right-2 text-white">
+          <input
+            type="checkbox"
+            checked={showCanvas}
+            onChange={() => setShowCanvas(!showCanvas)}
+          />
+          <span className="ml-2">Show Canvas</span>
+        </label>
+        {showCanvas && (
+          <canvas
+            ref={canvasRef}
+            width={640}
+            height={480}
+            className="absolute rounded-md shadow-md"
+          ></canvas>
+        )}
+      </div>
       {tallyResults.length > 0 && (
         <div className="mt-4 text-2xl font-bold">
-          Result: {tallyResults.join(", ")}
+          Results:{" "}
+          {tallyResults.map((result, index) => (
+            <span key={index}>{result}</span>
+          ))}
         </div>
       )}
     </div>
