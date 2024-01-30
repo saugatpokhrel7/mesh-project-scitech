@@ -20,9 +20,11 @@ const HandMesh: React.FC = () => {
   );
   const [tallyResults, setTallyResults] = useState<string[]>([]);
   const [showCanvas, setShowCanvas] = useState(true);
+  const [lastResult, setLastResult] = useState<string | null>(null);
 
   const clearResults = () => {
     setTallyResults([]);
+    setLastResult(null);
   };
 
   useEffect(() => {
@@ -75,11 +77,9 @@ const HandMesh: React.FC = () => {
         "11111": " ",
       };
 
-      // Detect hand in each frame
       const detectHand = async () => {
         const predictions = (await net.estimateHands(video)) || [];
 
-        // Draw mesh lines on canvas
         if (predictions.length > 0) {
           const fingerCoordinates = predictions[0].landmarks.map(
             (coords: [number, number, number]) =>
@@ -111,7 +111,6 @@ const HandMesh: React.FC = () => {
             Number(fingerCoordinates[18][0]), // Pinky point 2
           ];
 
-          // Compare with previous coordinates and log if different
           if (!arraysEqual(newThumbXCoordinates, thumb_x_coordinates)) {
             console.log("Thumb's X Coordinates changed:", newThumbXCoordinates);
             setThumb_x_coordinates(newThumbXCoordinates);
@@ -140,7 +139,6 @@ const HandMesh: React.FC = () => {
             setPinky_x_coordinates(newPinkyXCoordinates);
           }
 
-          // Update fingerConversionArray
           const newConversionArray = [
             newThumbXCoordinates[0] > newThumbXCoordinates[1] ? 0 : 1,
             newIndexXCoordinates[0] > newIndexXCoordinates[1] ? 0 : 1,
@@ -157,8 +155,8 @@ const HandMesh: React.FC = () => {
             const tallyResult = tallyAndCompare(newConversionArray);
             console.log("Tally Result:", tallyResult);
 
-            // Update tallyResults based on your intended logic
-            if (tallyResult !== "No match") {
+            if (tallyResult !== "No match" && tallyResult !== lastResult) {
+              setLastResult(tallyResult);
               setTallyResults((prevResults) => [...prevResults, tallyResult]);
             }
           }
@@ -169,7 +167,6 @@ const HandMesh: React.FC = () => {
           logFingerCoordinates("Ring", fingerCoordinates.slice(13, 17));
           logFingerCoordinates("Pinky", fingerCoordinates.slice(17, 21));
 
-          // Log if there is a change in coordinates
           if (
             !prevFingerCoordinates.every(
               (prevCoord, index) =>
@@ -194,7 +191,6 @@ const HandMesh: React.FC = () => {
                 context.fill();
               });
 
-              // Connect landmarks with lines to form the hand mesh within bounding box
               context.beginPath();
               context.moveTo(hand.landmarks[0][0], hand.landmarks[0][1]);
               for (let i = 1; i < hand.landmarks.length; i++) {
@@ -205,7 +201,6 @@ const HandMesh: React.FC = () => {
               context.strokeStyle = "blue";
               context.stroke();
 
-              // Draw a line specifically for the thumb finger to avoid distortion
               const thumbBaseX = hand.landmarks[0][0];
               const thumbTipX = hand.landmarks[4][0];
               const thumbMidX = hand.landmarks[2][0];
@@ -214,7 +209,6 @@ const HandMesh: React.FC = () => {
               const thumbTipY = hand.landmarks[4][1];
               const thumbMidY = hand.landmarks[2][1];
 
-              // Draw line from thumb base to midpoint to avoid distortion
               context.beginPath();
               context.moveTo(thumbBaseX, thumbBaseY);
               context.lineTo(thumbMidX, thumbMidY);
@@ -236,11 +230,8 @@ const HandMesh: React.FC = () => {
       };
 
       const tallyAndCompare = (newConversionArray: number[]) => {
-        // Tally the conversion array
-        // Convert array to string
         const tallyResult = newConversionArray.join("");
 
-        // Compare with character data
         console.log("Tally result to string", tallyResult);
         const charResult = characterData[tallyResult.toString()];
 
@@ -273,6 +264,7 @@ const HandMesh: React.FC = () => {
     fingerConversionArray,
     tallyResults,
     showCanvas,
+    lastResult,
   ]);
 
   return (
@@ -291,7 +283,6 @@ const HandMesh: React.FC = () => {
         >
           Clear
         </button>
-        {/* Checkbox to toggle canvas visibility */}
         <label className="absolute top-2 right-2 text-white">
           <input
             type="checkbox"
